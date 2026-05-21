@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ckm-graph-rag-v2"
+version = "2.0.0"
+description = "CKM Graph RAG v2 — Intelligent Clinical Decision Support"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = ">=1.32.0"
+plotly = ">=5.18.0"
+pandas = ">=2.0.0"
+numpy = ">=1.24.0"
+openai = ">=1.0.0"
+zhipuai = ">=2.0.0"
+chromadb = ">=0.4.0"
+langchain-community = ">=0.0.20"
+requests = "*"
+Pillow = "*"
+pymupdf = "*"
+scipy = "*"
+statsmodels = "*"
+PyYAML = "*"

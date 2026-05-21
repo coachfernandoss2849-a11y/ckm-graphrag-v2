@@ -1,0 +1,176 @@
+{
+  "videos": [
+    {
+      "id": "hypertension_3d",
+      "title_zh": "3D动画：高血压损伤肾脏的机制",
+      "title_en": "3D Animation: How Hypertension Damages Kidneys",
+      "filename": "hypertension_3d.mp4",
+      "subtitle_zh": "subtitles/hypertension_3d_zh.vtt",
+      "subtitle_en": "subtitles/hypertension_3d_en.vtt",
+      "thumbnail": "thumbnails/hypertension_3d.jpg",
+      "tags": [
+        "hypertension",
+        "kidney",
+        "map"
+      ]
+    },
+    {
+      "id": "hypertension_cascade",
+      "title_zh": "医学解析：血压失控引发的肾脏级联损伤",
+      "title_en": "Cascading Renal Damage from Uncontrolled Blood Pressure",
+      "filename": "hypertension_cascade.mp4",
+      "subtitle_zh": "subtitles/hypertension_cascade_zh.vtt",
+      "subtitle_en": "subtitles/hypertension_cascade_en.vtt",
+      "thumbnail": "thumbnails/hypertension_cascade.jpg",
+      "tags": [
+        "hypertension",
+        "kidney",
+        "map"
+      ]
+    },
+    {
+      "id": "hypertension_diagnosis",
+      "title_zh": "临床诊断：高血压诊断标准详解",
+      "title_en": "Diagnostic Criteria for Hypertension",
+      "filename": "hypertension_diagnosis.mp4",
+      "subtitle_zh": "subtitles/hypertension_diagnosis_zh.vtt",
+      "subtitle_en": "subtitles/hypertension_diagnosis_en.vtt",
+      "thumbnail": "thumbnails/hypertension_diagnosis.jpg",
+      "tags": [
+        "hypertension",
+        "map"
+      ]
+    },
+    {
+      "id": "kidney_tests",
+      "title_zh": "临床检查：确认肾损伤的三项关键检查",
+      "title_en": "Three Essential Tests to Confirm Kidney Injury",
+      "filename": "kidney_tests.mp4",
+      "subtitle_zh": "subtitles/kidney_tests_zh.vtt",
+      "subtitle_en": "subtitles/kidney_tests_en.vtt",
+      "thumbnail": "thumbnails/kidney_tests.jpg",
+      "tags": [
+        "kidney",
+        "egfr"
+      ]
+    },
+    {
+      "id": "urinalysis_guide",
+      "title_zh": "自查指南：高血压患者通过尿检识别肾损伤",
+      "title_en": "Identifying Kidney Damage via Urinalysis in Hypertensive Patients",
+      "filename": "urinalysis_guide.mp4",
+      "subtitle_zh": "subtitles/urinalysis_guide_zh.vtt",
+      "subtitle_en": "subtitles/urinalysis_guide_en.vtt",
+      "thumbnail": "thumbnails/urinalysis_guide.jpg",
+      "tags": [
+        "kidney",
+        "egfr"
+      ]
+    },
+    {
+      "id": "sglt2_preferred",
+      "title_zh": "药理学：SGLT2抑制剂为何是心肾保护首选",
+      "title_en": "Why SGLT2 Inhibitors Are Preferred for Cardio-Renal Protection",
+      "filename": "sglt2_preferred.mp4",
+      "subtitle_zh": "subtitles/sglt2_preferred_zh.vtt",
+      "subtitle_en": "subtitles/sglt2_preferred_en.vtt",
+      "thumbnail": "thumbnails/sglt2_preferred.jpg",
+      "tags": [
+        "sglt2",
+        "kidney",
+        "heart",
+        "high_risk"
+      ]
+    },
+    {
+      "id": "sglt2_mechanism",
+      "title_zh": "作用机制：SGLT2抑制剂心肾保护效应详解",
+      "title_en": "Cardio-Renal Protective Effects of SGLT2 Inhibitors Explained",
+      "filename": "sglt2_mechanism.mp4",
+      "subtitle_zh": "subtitles/sglt2_mechanism_zh.vtt",
+      "subtitle_en": "subtitles/sglt2_mechanism_en.vtt",
+      "thumbnail": "thumbnails/sglt2_mechanism.jpg",
+      "tags": [
+        "sglt2",
+        "kidney",
+        "heart",
+        "high_risk"
+      ]
+    },
+    {
+      "id": "ckm_research",
+      "title_zh": "前沿研究：心血管-肾脏-代谢综合征队列研究",
+      "title_en": "Cohort Study on Cardiovascular-Kidney-Metabolic Syndrome",
+      "filename": "ckm_research.mp4",
+      "subtitle_zh": "subtitles/ckm_research_zh.vtt",
+      "subtitle_en": "subtitles/ckm_research_en.vtt",
+      "thumbnail": "thumbnails/ckm_research.jpg",
+      "tags": [
+        "ckm",
+        "overview",
+        "high_risk"
+      ]
+    },
+    {
+      "id": "cardiorenal_elderly",
+      "title_zh": "临床治疗：老年心肾综合征核心管理策略",
+      "title_en": "Core Strategies for Managing Cardiorenal Syndrome in the Elderly",
+      "filename": "cardiorenal_elderly.mp4",
+      "subtitle_zh": "subtitles/cardiorenal_elderly_zh.vtt",
+      "subtitle_en": "subtitles/cardiorenal_elderly_en.vtt",
+      "thumbnail": "thumbnails/cardiorenal_elderly.jpg",
+      "tags": [
+        "ckm",
+        "kidney",
+        "heart",
+        "high_risk"
+      ]
+    }
+  ],
+  "lottie": [
+    {
+      "id": "kidney_organs",
+      "name_zh": "肾脏与内脏器官动画",
+      "name_en": "Kidney and Internal Organs Animation",
+      "filename": "kidney_organs.json",
+      "filename_en": "kidney_organs_en.json",
+      "tags": [
+        "kidney",
+        "egfr"
+      ]
+    },
+    {
+      "id": "heartbeat_ecg",
+      "name_zh": "心跳与心电图监测",
+      "name_en": "Heartbeat and ECG Monitor",
+      "filename": "heartbeat_ecg.json",
+      "filename_en": "heartbeat_ecg_en.json",
+      "tags": [
+        "heart",
+        "high_risk"
+      ]
+    },
+    {
+      "id": "blood_pressure",
+      "name_zh": "血压测量与健康监测",
+      "name_en": "Blood Pressure Measurement",
+      "filename": "blood_pressure.json",
+      "filename_en": "blood_pressure_en.json",
+      "tags": [
+        "hypertension",
+        "map"
+      ]
+    },
+    {
+      "id": "doctor_consult",
+      "name_zh": "医生在线问诊",
+      "name_en": "Doctor Online Consultation",
+      "filename": "doctor_consult.json",
+      "filename_en": "doctor_consult_en.json",
+      "tags": [
+        "ckm",
+        "overview"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+﻿trajectory_group,group_label,rank,feature,mean_abs_shap,category
+1,Group 1 (Stable Low-Risk),1,tx_lipid_ever,1.463306,Demographics
+1,Group 1 (Stable Low-Risk),2,tx_bp_ever,0.573659,Cardiovascular
+1,Group 1 (Stable Low-Risk),3,tx_dm_ever,0.282902,Demographics
+1,Group 1 (Stable Low-Risk),4,age,0.140784,Demographics
+1,Group 1 (Stable Low-Risk),5,dm,0.105663,Demographics
+1,Group 1 (Stable Low-Risk),6,tyg_x_egfr,0.079273,Renal
+1,Group 1 (Stable Low-Risk),7,bmi,0.07633,Demographics
+1,Group 1 (Stable Low-Risk),8,hdl,0.069945,Metabolic
+1,Group 1 (Stable Low-Risk),9,map_x_egfr,0.067031,Cardiovascular
+1,Group 1 (Stable Low-Risk),10,pp_class1,0.066054,Trajectory
+1,Group 1 (Stable Low-Risk),11,age_x_tyg,0.059575,Demographics
+1,Group 1 (Stable Low-Risk),12,htn,0.056599,Cardiovascular
+1,Group 1 (Stable Low-Risk),13,fpg,0.054519,Metabolic
+1,Group 1 (Stable Low-Risk),14,age_x_egfr,0.053121,Demographics
+1,Group 1 (Stable Low-Risk),15,tyg_x_map,0.052528,Cardiovascular
+1,Group 1 (Stable Low-Risk),16,pp_high_risk,0.050976,Trajectory
+1,Group 1 (Stable Low-Risk),17,tg,0.050747,Metabolic
+1,Group 1 (Stable Low-Risk),18,pp_class3,0.049967,Trajectory
+1,Group 1 (Stable Low-Risk),19,sbp,0.047082,Cardiovascular
+1,Group 1 (Stable Low-Risk),20,cardiometabolic_index,0.044684,Metabolic
+1,Group 1 (Stable Low-Risk),21,metabolic_renal_score,0.044679,Metabolic
+1,Group 1 (Stable Low-Risk),22,pp_class2,0.042277,Trajectory
+1,Group 1 (Stable Low-Risk),23,pp_max,0.041677,Trajectory
+1,Group 1 (Stable Low-Risk),24,tyg,0.040646,Metabolic
+1,Group 1 (Stable Low-Risk),25,dbp,0.037934,Cardiovascular
+1,Group 1 (Stable Low-Risk),26,pp_entropy,0.037569,Trajectory
+1,Group 1 (Stable Low-Risk),27,tg_hdl_ratio,0.034633,Metabolic
+1,Group 1 (Stable Low-Risk),28,map,0.032597,Cardiovascular
+1,Group 1 (Stable Low-Risk),29,smoking,0.026694,Demographics
+1,Group 1 (Stable Low-Risk),30,pp_class4,0.026491,Trajectory
+2,Group 2 (Moderate Stable),1,tx_lipid_ever,1.462779,Demographics
+2,Group 2 (Moderate Stable),2,tx_bp_ever,0.561643,Cardiovascular
+2,Group 2 (Moderate Stable),3,tx_dm_ever,0.292193,Demographics
+2,Group 2 (Moderate Stable),4,age,0.1735,Demographics
+2,Group 2 (Moderate Stable),5,dm,0.104243,Demographics
+2,Group 2 (Moderate Stable),6,tyg_x_egfr,0.082303,Renal
+2,Group 2 (Moderate Stable),7,bmi,0.079979,Demographics
+2,Group 2 (Moderate Stable),8,age_x_tyg,0.0773,Demographics
+2,Group 2 (Moderate Stable),9,hdl,0.070665,Metabolic
+2,Group 2 (Moderate Stable),10,map_x_egfr,0.066101,Cardiovascular
+2,Group 2 (Moderate Stable),11,htn,0.055093,Cardiovascular
+2,Group 2 (Moderate Stable),12,fpg,0.055035,Metabolic
+2,Group 2 (Moderate Stable),13,metabolic_renal_score,0.054202,Metabolic
+2,Group 2 (Moderate Stable),14,sbp,0.052889,Cardiovascular
+2,Group 2 (Moderate Stable),15,tg,0.052233,Metabolic
+2,Group 2 (Moderate Stable),16,age_x_egfr,0.051376,Demographics
+2,Group 2 (Moderate Stable),17,tyg_x_map,0.049489,Cardiovascular
+2,Group 2 (Moderate Stable),18,tyg,0.045072,Metabolic
+2,Group 2 (Moderate Stable),19,tg_hdl_ratio,0.037104,Metabolic
+2,Group 2 (Moderate Stable),20,cardiometabolic_index,0.035909,Metabolic
+2,Group 2 (Moderate Stable),21,age_sq,0.034086,Demographics
+2,Group 2 (Moderate Stable),22,dbp,0.033675,Cardiovascular
+2,Group 2 (Moderate Stable),23,map,0.032495,Cardiovascular
+2,Group 2 (Moderate Stable),24,smoking,0.028431,Demographics
+2,Group 2 (Moderate Stable),25,pp_high_risk,0.026912,Trajectory
+2,Group 2 (Moderate Stable),26,pp_max,0.02605,Trajectory
+2,Group 2 (Moderate Stable),27,pp_class1,0.025533,Trajectory
+2,Group 2 (Moderate Stable),28,egfr,0.024446,Renal
+2,Group 2 (Moderate Stable),29,pp_class3,0.023689,Trajectory
+2,Group 2 (Moderate Stable),30,pp_class2,0.020373,Trajectory
+3,Group 3 (Progressive),1,tx_lipid_ever,1.391427,Demographics
+3,Group 3 (Progressive),2,tx_bp_ever,0.54659,Cardiovascular
+3,Group 3 (Progressive),3,tx_dm_ever,0.361288,Demographics
+3,Group 3 (Progressive),4,age,0.120101,Demographics
+3,Group 3 (Progressive),5,dm,0.101442,Demographics
+3,Group 3 (Progressive),6,pp_class4,0.093191,Trajectory
+3,Group 3 (Progressive),7,tyg_x_egfr,0.08841,Renal
+3,Group 3 (Progressive),8,map_x_egfr,0.08045,Cardiovascular
+3,Group 3 (Progressive),9,pp_class3,0.075887,Trajectory
+3,Group 3 (Progressive),10,bmi,0.070003,Demographics
+3,Group 3 (Progressive),11,hdl,0.062824,Metabolic
+3,Group 3 (Progressive),12,fpg,0.062351,Metabolic
+3,Group 3 (Progressive),13,pp_class1,0.061436,Trajectory
+3,Group 3 (Progressive),14,tg,0.058672,Metabolic
+3,Group 3 (Progressive),15,pp_class2,0.056914,Trajectory
+3,Group 3 (Progressive),16,age_x_tyg,0.056679,Demographics
+3,Group 3 (Progressive),17,pp_entropy,0.053618,Trajectory
+3,Group 3 (Progressive),18,age_x_egfr,0.050873,Demographics
+3,Group 3 (Progressive),19,metabolic_renal_score,0.050379,Metabolic
+3,Group 3 (Progressive),20,sbp,0.04986,Cardiovascular
+3,Group 3 (Progressive),21,tyg_x_map,0.049816,Cardiovascular
+3,Group 3 (Progressive),22,tyg,0.047626,Metabolic
+3,Group 3 (Progressive),23,htn,0.046447,Cardiovascular
+3,Group 3 (Progressive),24,pp_max,0.044238,Trajectory
+3,Group 3 (Progressive),25,tg_hdl_ratio,0.040501,Metabolic
+3,Group 3 (Progressive),26,cardiometabolic_index,0.040464,Metabolic
+3,Group 3 (Progressive),27,dbp,0.038635,Cardiovascular
+3,Group 3 (Progressive),28,map,0.030018,Cardiovascular
+3,Group 3 (Progressive),29,egfr,0.026711,Renal
+3,Group 3 (Progressive),30,smoking,0.024859,Demographics
+4,Group 4 (High-Risk Accelerating),1,tx_lipid_ever,1.526343,Demographics
+4,Group 4 (High-Risk Accelerating),2,tx_bp_ever,0.613468,Cardiovascular
+4,Group 4 (High-Risk Accelerating),3,tx_dm_ever,0.291296,Demographics
+4,Group 4 (High-Risk Accelerating),4,dm,0.100113,Demographics
+4,Group 4 (High-Risk Accelerating),5,bmi,0.095961,Demographics
+4,Group 4 (High-Risk Accelerating),6,age,0.095414,Demographics
+4,Group 4 (High-Risk Accelerating),7,tyg_x_egfr,0.067076,Renal
+4,Group 4 (High-Risk Accelerating),8,hdl,0.059884,Metabolic
+4,Group 4 (High-Risk Accelerating),9,fpg,0.058195,Metabolic
+4,Group 4 (High-Risk Accelerating),10,map_x_egfr,0.055541,Cardiovascular
+4,Group 4 (High-Risk Accelerating),11,htn,0.05447,Cardiovascular
+4,Group 4 (High-Risk Accelerating),12,sbp,0.053991,Cardiovascular
+4,Group 4 (High-Risk Accelerating),13,pp_class3,0.053349,Trajectory
+4,Group 4 (High-Risk Accelerating),14,tyg,0.052059,Metabolic
+4,Group 4 (High-Risk Accelerating),15,age_x_tyg,0.05173,Demographics
+4,Group 4 (High-Risk Accelerating),16,tg,0.04928,Metabolic
+4,Group 4 (High-Risk Accelerating),17,pp_max,0.045874,Trajectory
+4,Group 4 (High-Risk Accelerating),18,age_x_egfr,0.04471,Demographics
+4,Group 4 (High-Risk Accelerating),19,tyg_x_map,0.044696,Cardiovascular
+4,Group 4 (High-Risk Accelerating),20,tg_hdl_ratio,0.043707,Metabolic
+4,Group 4 (High-Risk Accelerating),21,pp_entropy,0.042716,Trajectory
+4,Group 4 (High-Risk Accelerating),22,pp_class2,0.042084,Trajectory
+4,Group 4 (High-Risk Accelerating),23,metabolic_renal_score,0.04132,Metabolic
+4,Group 4 (High-Risk Accelerating),24,cardiometabolic_index,0.038968,Metabolic
+4,Group 4 (High-Risk Accelerating),25,dbp,0.038073,Cardiovascular
+4,Group 4 (High-Risk Accelerating),26,pp_class4,0.035749,Trajectory
+4,Group 4 (High-Risk Accelerating),27,map,0.035326,Cardiovascular
+4,Group 4 (High-Risk Accelerating),28,pp_high_risk,0.031694,Trajectory
+4,Group 4 (High-Risk Accelerating),29,pp_class1,0.030921,Trajectory
+4,Group 4 (High-Risk Accelerating),30,smoking,0.022733,Demographics

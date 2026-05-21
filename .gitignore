@@ -1,0 +1,17 @@
+# Secrets
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# ChromaDB (rebuild on deploy)
+chroma_db/
+
+# OS
+.DS_Store
+Thumbs.db
