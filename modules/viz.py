@@ -663,13 +663,15 @@ def trajectory_phenotype_chart(traj_df: pd.DataFrame) -> go.Figure:
                          tickvals=[0, 1, 2], ticktext=['W1<br>2015', 'W2<br>2017', 'W3<br>2019'],
                          title_font=dict(size=10))
 
-    # Fix subplot title font size to avoid overlap
+    _apply_base(fig, 'CKM Trajectory Phenotype Groups — Population Cohort (N = 95,240)', height=660)
+    # Fix subplot title font and position to prevent overlap with axis labels
     for ann in fig.layout.annotations:
-        ann.font = dict(size=12, family="Inter, sans-serif")
-        ann.yshift = 8
-
-    _apply_base(fig, 'CKM Trajectory Phenotype Groups  (N = 95,240)', height=580)
-    fig.update_layout(legend=dict(orientation='h', y=-0.08, font=dict(size=11)))
+        ann.font = dict(size=11, family="Inter, sans-serif", color=NAVY)
+        ann.yanchor = 'bottom'
+    fig.update_layout(
+        legend=dict(orientation='h', y=-0.06, x=0.5, xanchor='center', font=dict(size=11)),
+        margin=dict(l=50, r=30, t=80, b=60),
+    )
     return fig
 
 

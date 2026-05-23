@@ -1664,7 +1664,7 @@ with tab6:
         st.plotly_chart(biblio_figs["journals"], use_container_width=True, key="bib_journals_tab")
 
     st.markdown("---")
-    st.markdown("### 综述图 — CKM Syndrome Pathobiologic Network")
+    st.markdown("### CKM Syndrome Pathobiologic Network")
 
     _REVIEW_SVG = """
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="400">
