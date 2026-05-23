@@ -83,11 +83,11 @@ def risk_gauge(mace: float, comp: float) -> go.Figure:
 # ---------------------------------------------------------------------------
 def trajectory_chart(patient_data: dict) -> go.Figure:
     """5-year biomarker trajectory subplots with reference bands and trend lines."""
-    biomarkers = ['ALB', 'BMI', 'HDL', 'MAP', 'eGFR']
+    biomarkers = ['SBP', 'DBP', 'BMI', 'MAP', 'eGFR']
     refs = {
-        'ALB': (35, 55, 'g/L'),
+        'SBP': (90, 140, 'mmHg'),
+        'DBP': (60, 90, 'mmHg'),
         'BMI': (18.5, 24.9, 'kg/m²'),
-        'HDL': (1.0, 1.6, 'mmol/L'),
         'MAP': (70, 100, 'mmHg'),
         'eGFR': (60, 120, 'mL/min/1.73m²'),
     }
@@ -598,11 +598,14 @@ def trajectory_phenotype_chart(traj_df: pd.DataFrame) -> go.Figure:
     group_colors = [SKY, OCHRE, ROSE, SAGE]
     group_labels = {1: 'P1: Low-burden', 2: 'P2: Adiposity-BP', 3: 'P3: Glucose-TG', 4: 'P4: Lean-Renal'}
 
-    # Get available biomarkers from data
+    # Get available biomarkers from data (include all vars present in the data)
+    all_possible = ['bmi', 'fpg', 'map', 'egfr', 'tg', 'hdl', 'alb']
+    var_map.update({'fpg': 'FPG', 'tg': 'TG'})
+    units.update({'FPG': 'mmol/L', 'TG': 'mmol/L'})
     if 'variable' in df.columns:
-        avail_vars = [v for v in ['bmi', 'map', 'egfr', 'hdl'] if v in df['variable'].unique()]
+        avail_vars = [v for v in all_possible if v in df['variable'].unique()]
     else:
-        avail_vars = [v for v in ['bmi', 'map', 'egfr', 'hdl'] if v in df.columns]
+        avail_vars = [v for v in all_possible if v in df.columns]
 
     biomarkers = [var_map.get(v, v.upper()) for v in avail_vars[:4]]
     if not biomarkers:

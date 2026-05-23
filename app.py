@@ -252,6 +252,42 @@ def _rag_query(query: str, k: int = 4) -> str:
     return "\n".join(f"[Ref {i+1}]: {d.page_content}" for i, d in enumerate(docs))
 
 
+def _assign_trajectory_group(bmi: float, map_val: float, ckm_stage: float,
+                              dm: int, mace_risk: float) -> tuple:
+    """
+    Heuristic assignment of a patient to one of the 4 GBTM trajectory phenotypes.
+    Returns (group_int, label_str, mechanism_str).
+    P1: Low-burden  — low BMI, low MAP, low CKM
+    P2: Adiposity-BP — high BMI, high MAP
+    P3: Glucose-TG  — diabetes/metabolic, moderate MAP
+    P4: Lean-Renal  — lean but high CKM/renal burden
+    """
+    high_bmi = bmi >= 25
+    high_map = map_val >= 100
+    high_ckm = ckm_stage >= 2
+
+    if high_bmi and high_map:
+        return (2, "P2: Adiposity-BP Phenotype",
+                "Driven by excess adiposity and sustained hypertension. "
+                "The TyG→MAP cascade is the dominant pathway: visceral fat elevates triglyceride-glucose index, "
+                "which increases arterial stiffness and MAP. Priority: BP control + weight reduction.")
+    elif dm and not high_bmi:
+        return (3, "P3: Glucose-TG Phenotype",
+                "Characterised by glucose-lipid dysregulation with a lean body habitus. "
+                "Elevated FPG and TG impair endothelial function and accelerate glomerular injury. "
+                "Priority: glycaemic control + statin therapy.")
+    elif high_ckm and not high_bmi:
+        return (4, "P4: Lean-Renal Phenotype",
+                "Lean phenotype with disproportionate CKM staging. "
+                "eGFR decline is the primary driver of cardiovascular risk through uraemic toxin accumulation. "
+                "Priority: RAASi + SGLT2i to slow renal progression.")
+    else:
+        return (1, "P1: Low-burden Stable Phenotype",
+                "Low cardiometabolic burden across all axes. "
+                "Trajectory is stable; risk is primarily age-related. "
+                "Priority: lifestyle maintenance + periodic screening.")
+
+
 # ─── IP Mascot System ─────────────────────────────────────────────────────────
 _IP_ASSETS_DIR = os.path.join(_APP_DIR, "assets", "ip-states")
 _IP_TOTAL_IMG  = os.path.join(_IP_ASSETS_DIR, "total.png")
@@ -897,9 +933,19 @@ with tab1:
                         mace_risk, comp_risk, ckm_approx, map_val,
                         bmi_input, htn_val, dm_val)
 
+                    # Determine trajectory group from GBTM model
+                    _traj_group, _traj_label, _traj_mech = _assign_trajectory_group(
+                        bmi_input, map_val, ckm_approx, dm_val, mace_risk)
+                    st.session_state["traj_group"]  = _traj_group
+                    st.session_state["traj_label"]  = _traj_label
+                    st.session_state["traj_mech"]   = _traj_mech
+
                     patient_data = {
                         "sbp": sbp_list, "dbp": dbp_list, "bmi": bmi_list,
                         "map": map_list, "follow_time": follow_time,
+                        "ALB": [float(ocr.get('alb') or 40.0)] * len(sbp_list),
+                        "HDL": [float(ocr.get('hdl') or 1.2)] * len(sbp_list),
+                        "eGFR": [float(ocr.get('egfr') or 80.0)] * len(sbp_list),
                     }
 
                     st.session_state.update({
@@ -989,6 +1035,42 @@ with tab1:
                         use_container_width=True, key="timeline_new",
                     )
                     st.plotly_chart(trajectory_chart(patient_data), use_container_width=True, key="traj_new")
+
+                    # ── Trajectory group assignment card ──────────────────────
+                    _tg, _tl, _tm = (
+                        st.session_state.get("traj_group", 1),
+                        st.session_state.get("traj_label", "P1: Low-burden Stable Phenotype"),
+                        st.session_state.get("traj_mech", ""),
+                    )
+                    _tg_colors = {1:"#4E8B6F", 2:"#A07830", 3:"#A05060", 4:"#4A6785"}
+                    _tg_c = _tg_colors.get(_tg, "#1B3A57")
+                    st.markdown(f"""
+                    <div style='background:white;border-radius:12px;padding:18px 22px;
+                                box-shadow:0 2px 8px rgba(0,0,0,0.08);margin:12px 0;
+                                border-left:5px solid {_tg_c};'>
+                      <div style='font-size:11px;color:#7F8C8D;font-weight:700;
+                                  text-transform:uppercase;letter-spacing:1px;'>
+                        Trajectory Phenotype Classification
+                      </div>
+                      <div style='font-size:20px;font-weight:700;color:{_tg_c};margin:6px 0 4px;'>
+                        {_tl}
+                      </div>
+                      <div style='font-size:13px;color:#2C3E50;line-height:1.7;'>
+                        {_tm}
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # ── Per-patient SHAP lollipop (from group SHAP data) ──────
+                    if not shap_df.empty:
+                        st.markdown("#### 🔍 Key Risk Drivers for Your Trajectory Group")
+                        _shap_grp = shap_df[shap_df.get('trajectory_group', shap_df.get('group')) == _tg] if hasattr(shap_df, 'get') else pd.DataFrame()
+                        _grp_col = 'trajectory_group' if 'trajectory_group' in shap_df.columns else 'group'
+                        _shap_grp = shap_df[shap_df[_grp_col] == _tg]
+                        if not _shap_grp.empty:
+                            from modules.viz import shap_lollipop as _sl
+                            _fig_shap = _sl(_shap_grp.assign(**{_grp_col: _tg}), top_n=10)
+                            st.plotly_chart(_fig_shap, use_container_width=True, key="shap_patient")
 
                     with st.spinner("Retrieving guidelines & generating structured report..."):
                         query = (f"CKM syndrome stage {ckm_approx:.0f} MACE risk {mace_risk:.2f} "
@@ -1187,39 +1269,51 @@ with tab2:
         else:
             st.plotly_chart(clpm_path_diagram(clpm_df), use_container_width=True)
 
-            # Heatmap of cross-lagged betas by trajectory group
-            st.markdown("#### Cross-Lagged Beta Coefficients by Trajectory Group")
+            # Cross-lagged beta summary table (data has outcome/predictor/beta_std format)
+            st.markdown("#### Cross-Lagged Path Coefficients")
             try:
                 import plotly.graph_objects as _go_hm
-                cl_paths = clpm_df[clpm_df["path_type"] != "AR"].copy()
-                if not cl_paths.empty and "group" in cl_paths.columns:
-                    cl_paths["path_label"] = cl_paths["from_var"] + "→" + cl_paths["to_var"]
-                    pivot = cl_paths.pivot_table(
-                        index="path_label", columns="group", values="beta", aggfunc="mean"
-                    )
-                    fig_hm = _go_hm.Figure(data=_go_hm.Heatmap(
-                        z=pivot.values,
-                        x=[str(c) for c in pivot.columns],
-                        y=pivot.index.tolist(),
-                        colorscale="RdBu",
-                        zmid=0,
-                        text=[[f"{v:.3f}" for v in row] for row in pivot.values],
-                        texttemplate="%{text}",
-                        hovertemplate="Path: %{y}<br>Group: %{x}<br>β=%{z:.3f}<extra></extra>",
-                    ))
-                    fig_hm.update_layout(
-                        title="Cross-Lagged Betas by Trajectory Group",
-                        height=360,
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Inter, sans-serif"),
-                        margin=dict(l=40, r=40, t=50, b=40),
-                    )
-                    st.plotly_chart(fig_hm, use_container_width=True)
+                # The CSV uses outcome/predictor/beta_std — derive path label from that
+                _cl = clpm_df.copy()
+                # Build path_label from outcome and predictor columns if available
+                if 'outcome' in _cl.columns and 'predictor' in _cl.columns:
+                    def _short(s):
+                        parts = str(s).rsplit('_', 1)
+                        return parts[0].upper() if len(parts) == 2 else s
+                    _cl['path_label'] = _cl['predictor'].apply(_short) + '→' + _cl['outcome'].apply(_short)
+                    _beta_col = 'beta_std' if 'beta_std' in _cl.columns else 'beta'
+                    # Filter out autoregressive (same var)
+                    _cl['_from_var'] = _cl['predictor'].apply(lambda s: str(s).rsplit('_',1)[0].lower())
+                    _cl['_to_var']   = _cl['outcome'].apply(lambda s: str(s).rsplit('_',1)[0].lower())
+                    _cl_cross = _cl[_cl['_from_var'] != _cl['_to_var']].copy()
+                    if not _cl_cross.empty:
+                        _cl_cross['sig_label'] = _cl_cross.get('sig', '')
+                        fig_hm = _go_hm.Figure(data=_go_hm.Bar(
+                            x=_cl_cross['path_label'],
+                            y=_cl_cross[_beta_col],
+                            marker_color=['#4E8B6F' if v > 0 else '#A05060' for v in _cl_cross[_beta_col]],
+                            text=[f"β={v:.3f}" for v in _cl_cross[_beta_col]],
+                            textposition='outside',
+                            hovertemplate='%{x}: β=%{y:.4f}<extra></extra>',
+                        ))
+                        fig_hm.update_layout(
+                            title="Cross-Lagged Path Coefficients (Non-AR paths, Full Cohort N=95,240)",
+                            height=360,
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(family="Inter, sans-serif"),
+                            margin=dict(l=40, r=40, t=60, b=80),
+                            yaxis=dict(title='Standardised β', gridcolor='#B8C8D8'),
+                            xaxis=dict(title='Cross-Lagged Path'),
+                        )
+                        fig_hm.add_hline(y=0, line=dict(color='#1B3A57', width=1, dash='dot'))
+                        st.plotly_chart(fig_hm, use_container_width=True)
+                    else:
+                        st.info("All paths are autoregressive — no cross-lagged paths to display.")
                 else:
-                    st.info("No cross-lagged paths with group column found for heatmap.")
+                    st.info("Cross-lagged path columns not found in data.")
             except Exception as _e:
-                st.info(f"Heatmap skipped: {_e}")
+                st.info(f"Cross-lagged chart skipped: {_e}")
 
     elif section == "SHAP Feature Importance":
         if shap_df.empty:
@@ -1483,55 +1577,77 @@ with tab5:
 # TAB 6 — Literature & Bibliometrics
 # ══════════════════════════════════════════════════════════════════════════════
 with tab6:
-    st.markdown("## 📖 Literature & Bibliometrics")
-
-    st.markdown(f"""
-    <div class='biblio-card'>
-      <div style='display:flex;gap:32px;flex-wrap:wrap;'>
-        <div>
-          <div style='font-size:11px;color:#5D6D7E;font-weight:700;text-transform:uppercase;
-                      letter-spacing:1px;'>Total Papers</div>
-          <div style='font-size:36px;font-weight:700;color:#1B3A57;'>{BIBLIO_STATS['total_papers']}</div>
-        </div>
-        <div>
-          <div style='font-size:11px;color:#5D6D7E;font-weight:700;text-transform:uppercase;
-                      letter-spacing:1px;'>Date Range</div>
-          <div style='font-size:36px;font-weight:700;color:#1B3A57;'>{BIBLIO_STATS['date_range']}</div>
-        </div>
-        <div>
-          <div style='font-size:11px;color:#5D6D7E;font-weight:700;text-transform:uppercase;
-                      letter-spacing:1px;'>Top Journal</div>
-          <div style='font-size:36px;font-weight:700;color:#1B3A57;'>{BIBLIO_STATS['top_journal']}</div>
-        </div>
-        <div style='flex:1;min-width:200px;'>
-          <div style='font-size:11px;color:#5D6D7E;font-weight:700;text-transform:uppercase;
-                      letter-spacing:1px;'>Top Keywords</div>
-          <div style='font-size:13px;color:#2C3E50;margin-top:4px;line-height:1.8;'>
-            {' · '.join(BIBLIO_STATS['keywords'][:5])}
-          </div>
-        </div>
+    # ── Hero banner ──────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#1B3A57 0%,#2E6B9E 60%,#4E8B6F 100%);
+                border-radius:16px;padding:36px 40px 28px;margin-bottom:28px;'>
+      <div style='color:#FFFFFF;font-size:28px;font-weight:800;letter-spacing:-0.5px;'>
+        📖 CKM Syndrome · Literature Intelligence
       </div>
+      <div style='color:#C8E6FF;font-size:14px;margin-top:6px;opacity:.85;'>
+        Automated bibliometric surveillance of the cardio-kidney-metabolic continuum
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── KPI cards row ─────────────────────────────────────────────────────────
+    _kc = st.columns(4)
+    _kpi_items = [
+        ("📄", "Publications", str(BIBLIO_STATS['total_papers']), "#4E8B6F"),
+        ("📅", "Date Range",   BIBLIO_STATS['date_range'],          "#2E6B9E"),
+        ("🏆", "Top Journal",  BIBLIO_STATS['top_journal'],         "#A05060"),
+        ("🔑", "Top Keyword",  BIBLIO_STATS['keywords'][0],         "#7B5EA7"),
+    ]
+    for _col, (_icon, _label, _val, _color) in zip(_kc, _kpi_items):
+        _col.markdown(f"""
+        <div style='background:#FFFFFF;border:1px solid #E8EDF2;border-radius:12px;
+                    padding:20px 16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);'>
+          <div style='font-size:28px;'>{_icon}</div>
+          <div style='font-size:10px;color:#8898AA;font-weight:700;text-transform:uppercase;
+                      letter-spacing:1.2px;margin:6px 0 4px;'>{_label}</div>
+          <div style='font-size:20px;font-weight:800;color:{_color};line-height:1.2;'>{_val}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
+    # ── Keyword chips ─────────────────────────────────────────────────────────
+    _chip_colors = ["#4E8B6F","#2E6B9E","#A05060","#7B5EA7","#C07030","#1B7A6E","#8B4E6F"]
+    _chips_html = " ".join([
+        f"<span style='background:{_chip_colors[i % len(_chip_colors)]}22;"
+        f"color:{_chip_colors[i % len(_chip_colors)]};border:1px solid {_chip_colors[i % len(_chip_colors)]}44;"
+        f"border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;white-space:nowrap;'>{kw}</span>"
+        for i, kw in enumerate(BIBLIO_STATS['keywords'])
+    ])
+    st.markdown(f"""
+    <div style='margin-bottom:24px;'>
+      <div style='font-size:11px;color:#8898AA;font-weight:700;text-transform:uppercase;
+                  letter-spacing:1px;margin-bottom:10px;'>Research Themes</div>
+      <div style='display:flex;gap:8px;flex-wrap:wrap;'>{_chips_html}</div>
     </div>
     """, unsafe_allow_html=True)
 
     biblio_figs = bibliometrics_panel(BIBLIO_STATS)
 
+    # ── Tabs ──────────────────────────────────────────────────────────────────
     bib_tab_overview, bib_tab_trend, bib_tab_kw, bib_tab_journals = st.tabs(
-        ["Overview", "Publication Trends", "Keywords", "Journals"]
+        ["📊 Overview", "📈 Trends", "🔑 Keywords", "📰 Journals"]
     )
 
     with bib_tab_overview:
-        st.markdown("### CKM Syndrome Literature Overview")
         st.markdown(f"""
-        This bibliometric analysis covers **{BIBLIO_STATS['total_papers']} publications**
-        from **{BIBLIO_STATS['date_range']}** indexed across major cardiovascular, renal,
-        and metabolic medicine journals. The field has grown rapidly, with annual publication
-        counts increasing from {BIBLIO_STATS['counts'][0]} in {BIBLIO_STATS['years'][0]}
-        to {BIBLIO_STATS['counts'][-1]} in {BIBLIO_STATS['years'][-1]}.
-
-        Key research themes include SGLT2 inhibitor cardio-renal protection, GBTM trajectory
-        analysis, TyG index as a metabolic biomarker, and integrated CKM risk prediction models.
-        """)
+        <div style='background:#F0F7FF;border-left:4px solid #2E6B9E;border-radius:8px;
+                    padding:16px 20px;margin-bottom:20px;font-size:14px;color:#2C3E50;line-height:1.7;'>
+        This bibliometric analysis covers <strong>{BIBLIO_STATS['total_papers']} publications</strong>
+        from <strong>{BIBLIO_STATS['date_range']}</strong> indexed across major cardiovascular, renal,
+        and metabolic medicine journals. Annual publications grew from
+        <strong>{BIBLIO_STATS['counts'][0]}</strong> ({BIBLIO_STATS['years'][0]}) to
+        <strong>{BIBLIO_STATS['counts'][-1]}</strong> ({BIBLIO_STATS['years'][-1]}), reflecting the
+        explosive clinical interest in integrated CKM risk management.<br><br>
+        Key themes: SGLT2 inhibitor cardio-renal protection · GBTM trajectory analysis ·
+        TyG index as metabolic biomarker · integrated CKM risk prediction models.
+        </div>
+        """, unsafe_allow_html=True)
         _ov_c1, _ov_c2 = st.columns(2)
         with _ov_c1:
             st.plotly_chart(biblio_figs["trend"], use_container_width=True, key="bib_trend_ov")
