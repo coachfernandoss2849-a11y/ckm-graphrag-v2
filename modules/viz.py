@@ -607,19 +607,28 @@ def trajectory_phenotype_chart(traj_df: pd.DataFrame) -> go.Figure:
     else:
         avail_vars = [v for v in all_possible if v in df.columns]
 
-    biomarkers = [var_map.get(v, v.upper()) for v in avail_vars[:4]]
+    biomarkers = [var_map.get(v, v.upper()) for v in avail_vars]
     if not biomarkers:
+        avail_vars = ['bmi', 'map', 'egfr', 'hdl']
         biomarkers = ['BMI', 'MAP', 'eGFR', 'HDL']
 
     groups = sorted(df[grp_col].unique())[:4]
 
+    # Dynamic layout: ≤4 vars → 2×2, 5 vars → 2×3 (with last cell empty)
+    n_vars = len(biomarkers)
+    if n_vars <= 4:
+        n_rows, n_cols = 2, 2
+        positions = [(1,1),(1,2),(2,1),(2,2)]
+    else:
+        n_rows, n_cols = 2, 3
+        positions = [(1,1),(1,2),(1,3),(2,1),(2,2),(2,3)]
+
     fig = make_subplots(
-        rows=2, cols=2,
+        rows=n_rows, cols=n_cols,
         subplot_titles=biomarkers,
-        vertical_spacing=0.16,
-        horizontal_spacing=0.12,
+        vertical_spacing=0.22,
+        horizontal_spacing=0.10,
     )
-    positions = [(1,1),(1,2),(2,1),(2,2)]
 
     for bi, (bm, raw_var) in enumerate(zip(biomarkers, avail_vars)):
         row, col = positions[bi]
@@ -648,12 +657,19 @@ def trajectory_phenotype_chart(traj_df: pd.DataFrame) -> go.Figure:
                 showlegend=(bi == 0),
                 hovertemplate=f'{lbl}<br>{bm}: %{{y:.1f}} {unit}<extra></extra>',
             ), row=row, col=col)
-        fig.update_yaxes(title_text=unit, row=row, col=col, gridcolor=MIST, gridwidth=0.5)
+        fig.update_yaxes(title_text=unit, row=row, col=col, gridcolor=MIST, gridwidth=0.5,
+                         title_font=dict(size=10))
         fig.update_xaxes(title_text='Wave', row=row, col=col, gridcolor=MIST, gridwidth=0.5,
-                         tickvals=[0, 1, 2], ticktext=['W1 2015', 'W2 2017', 'W3 2019'])
+                         tickvals=[0, 1, 2], ticktext=['W1<br>2015', 'W2<br>2017', 'W3<br>2019'],
+                         title_font=dict(size=10))
 
-    _apply_base(fig, 'CKM Trajectory Phenotype Groups  (N = 95,240)', height=540)
-    fig.update_layout(legend=dict(orientation='h', y=-0.10, font=dict(size=11)))
+    # Fix subplot title font size to avoid overlap
+    for ann in fig.layout.annotations:
+        ann.font = dict(size=12, family="Inter, sans-serif")
+        ann.yshift = 8
+
+    _apply_base(fig, 'CKM Trajectory Phenotype Groups  (N = 95,240)', height=580)
+    fig.update_layout(legend=dict(orientation='h', y=-0.08, font=dict(size=11)))
     return fig
 
 
@@ -677,8 +693,8 @@ def radar_phenotype(traj_df: pd.DataFrame) -> go.Figure:
         df = traj_df.copy()
         df[grp_col] = df[grp_col].astype(int)
         df['variable'] = df['variable'].str.lower()
-        avail = [v for v in ['bmi', 'map', 'egfr', 'hdl', 'alb'] if v in df['variable'].unique()]
-        var_map = {'bmi': 'BMI', 'map': 'MAP', 'egfr': 'eGFR', 'hdl': 'HDL', 'alb': 'ALB'}
+        avail = [v for v in ['bmi', 'fpg', 'map', 'egfr', 'tg', 'hdl', 'alb'] if v in df['variable'].unique()]
+        var_map = {'bmi': 'BMI', 'fpg': 'FPG', 'map': 'MAP', 'egfr': 'eGFR', 'tg': 'TG', 'hdl': 'HDL', 'alb': 'ALB'}
         biomarkers = [var_map[v] for v in avail]
         groups = sorted(df[grp_col].unique())[:4]
         # Build agg: mean per group per variable
