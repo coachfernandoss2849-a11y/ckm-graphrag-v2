@@ -34,12 +34,8 @@ from modules.admin import check_auth, render_video_upload, render_kb_upload, ren
 st.set_page_config(page_title="CKM Graph RAG v2", page_icon="🧬", layout="wide")
 
 # ─── Constants ────────────────────────────────────────────────────────────────
-# API key loaded from environment variable (set in HuggingFace Spaces → Settings → Secrets)
-ZHIPU_KEY  = os.environ.get("ZHIPUAI_API_KEY", "")
-if not ZHIPU_KEY:
-    import streamlit as _st_check
-    _st_check.error("⚠️ ZHIPUAI_API_KEY not set. Please configure it in Space Secrets.")
-    _st_check.stop()
+ZHIPU_KEY  = os.environ.get("ZHIPUAI_API_KEY", "1cddba76ebff472d97774d5b55fabd3c.s1DzJye0WJKfbaDg")
+os.environ["ZHIPUAI_API_KEY"] = ZHIPU_KEY
 client     = OpenAI(api_key=ZHIPU_KEY, base_url="https://open.bigmodel.cn/api/paas/v4/")
 MODEL_NAME = "glm-4"
 
