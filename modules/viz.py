@@ -101,18 +101,22 @@ def trajectory_chart(patient_data: dict) -> go.Figure:
     )
     positions = [(1,1),(1,2),(1,3),(2,1),(2,2)]
 
-    years = list(range(6))  # 0-5
+    years = list(range(1, 6))  # Year 1-5
 
     for idx, bm in enumerate(biomarkers):
         row, col = positions[idx]
         lo, hi, unit = refs[bm]
-        vals = patient_data.get(bm, [None]*6)
-        vals = [v if v is not None else np.nan for v in vals]
+        raw = patient_data.get(bm, [None]*5)
+        # Ensure exactly 5 values
+        raw = list(raw)[:5]
+        while len(raw) < 5:
+            raw.append(raw[-1] if raw else np.nan)
+        vals = [v if v is not None else np.nan for v in raw]
 
         # Reference band
         fig.add_trace(go.Scatter(
             x=years + years[::-1],
-            y=[hi]*6 + [lo]*6,
+            y=[hi]*5 + [lo]*5,
             fill='toself',
             fillcolor='rgba(184,200,216,0.20)',
             line=dict(color='rgba(0,0,0,0)'),

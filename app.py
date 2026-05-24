@@ -891,14 +891,20 @@ with tab1:
                       help="ln(TG [mg/dL] × FPG [mg/dL] / 2); auto-computed from TG & FPG above")
 
         st.markdown("---")
-        st.markdown("**Optional: Historical Trend** *(3 time-points, oldest → newest)*:")
-        st.caption("Used for V6 longitudinal model — enter prior annual values if available.")
+        st.markdown("**Optional: Historical Trend** *(up to 5 years, oldest → newest)*:")
+        st.caption("Used for V6 longitudinal model and trajectory chart — enter up to 5 annual values.")
 
         with st.expander("📈 Enter historical trend for 5 trajectory variables (oldest → newest)", expanded=False):
-            st.caption("Enter 3 comma-separated annual values (Y-2, Y-1, current). Used by V6 longitudinal model.")
+            st.caption("Enter up to 5 comma-separated annual values (Y1 oldest → Y5 most recent). Fewer values are also accepted.")
             def _build_series(field: str, current_val: float, delta: float = 0.0) -> str:
-                year_map = {"Y1": 0, "Y2": 1, "Y3": 2}
-                series = [current_val - 2*delta, current_val - delta, current_val]
+                year_map = {"Y1": 0, "Y2": 1, "Y3": 2, "Y4": 3, "Y5": 4}
+                series = [
+                    current_val - 4*delta,
+                    current_val - 3*delta,
+                    current_val - 2*delta,
+                    current_val - delta,
+                    current_val,
+                ]
                 for yr, r in ocr_year_data.items():
                     idx = year_map.get(yr)
                     if idx is not None and r.get(field) is not None:
@@ -910,26 +916,26 @@ with tab1:
             with c_t1:
                 sbp_trend_input = st.text_input("SBP trend (mmHg):",
                                                 _build_series("sbp", float(sbp_input), 5.0),
-                                                help="3 annual SBP values, oldest first")
+                                                help="Up to 5 annual SBP values, oldest first")
             with c_t2:
                 dbp_trend_input = st.text_input("DBP trend (mmHg):",
                                                 _build_series("dbp", float(dbp_input), 3.0),
-                                                help="3 annual DBP values, oldest first")
+                                                help="Up to 5 annual DBP values, oldest first")
             with c_t3:
                 bmi_trend_input = st.text_input("BMI trend (kg/m²):",
                                                 _build_series("bmi", bmi_input, 0.5),
-                                                help="3 annual BMI values, oldest first")
+                                                help="Up to 5 annual BMI values, oldest first")
 
             st.markdown("**Metabolic & Renal**")
             c_t4, c_t5 = st.columns(2)
             with c_t4:
                 fpg_trend_input = st.text_input("FPG trend (mmol/L):",
                                                 _build_series("fpg", float(fpg_input), 0.2),
-                                                help="3 annual fasting glucose values, oldest first")
+                                                help="Up to 5 annual fasting glucose values, oldest first")
             with c_t5:
                 egfr_trend_input = st.text_input("eGFR trend (mL/min/1.73m²):",
                                                  _build_series("egfr", float(egfr_input), 2.0),
-                                                 help="3 annual eGFR values, oldest first")
+                                                 help="Up to 5 annual eGFR values, oldest first")
 
         st.markdown("---")
         follow_time = st.slider("⏱️ Prediction horizon (months):",
@@ -1059,12 +1065,29 @@ with tab1:
                     st.session_state["traj_label"]  = _traj_label
                     st.session_state["traj_mech"]   = _traj_mech
 
+                    # Pad/truncate all series to exactly 5 years for trajectory_chart
+                    def _pad5(lst, fill=None):
+                        out = list(lst)[:5]
+                        while len(out) < 5:
+                            out.append(fill if fill is not None else out[-1] if out else np.nan)
+                        return out
+
+                    _alb_val  = float(ocr.get('alb')  or 40.0)
+                    _hdl_val  = float(ocr.get('hdl')  or 1.2)
+                    _egfr_val = float(ocr.get('egfr') or 80.0)
+
                     patient_data = {
+                        "SBP":  _pad5(sbp_list),
+                        "DBP":  _pad5(dbp_list),
+                        "BMI":  _pad5(bmi_list),
+                        "MAP":  _pad5(map_list),
+                        "eGFR": _pad5(egfr_list, _egfr_val),
+                        # keep lowercase aliases for counterfactual / other uses
                         "sbp": sbp_list, "dbp": dbp_list, "bmi": bmi_list,
-                        "map": map_list, "follow_time": follow_time,
-                        "ALB": [float(ocr.get('alb') or 40.0)] * len(sbp_list),
-                        "HDL": [float(ocr.get('hdl') or 1.2)] * len(sbp_list),
-                        "eGFR": [float(ocr.get('egfr') or 80.0)] * len(sbp_list),
+                        "map": map_list,
+                        "follow_time": follow_time,
+                        "ALB": [_alb_val] * 5,
+                        "HDL": [_hdl_val] * 5,
                     }
 
                     st.session_state.update({
