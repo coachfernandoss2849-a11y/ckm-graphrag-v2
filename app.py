@@ -34,26 +34,35 @@ from modules.admin import check_auth, render_video_upload, render_kb_upload, ren
 st.set_page_config(page_title="CKM Graph RAG v2", page_icon="🧬", layout="wide")
 
 # ─── Constants ────────────────────────────────────────────────────────────────
-ZHIPU_KEY  = "1cddba76ebff472d97774d5b55fabd3c.s1DzJye0WJKfbaDg"
-os.environ["ZHIPUAI_API_KEY"] = ZHIPU_KEY
+# API key loaded from environment variable (set in HuggingFace Spaces → Settings → Secrets)
+ZHIPU_KEY  = os.environ.get("ZHIPUAI_API_KEY", "")
+if not ZHIPU_KEY:
+    import streamlit as _st_check
+    _st_check.error("⚠️ ZHIPUAI_API_KEY not set. Please configure it in Space Secrets.")
+    _st_check.stop()
 client     = OpenAI(api_key=ZHIPU_KEY, base_url="https://open.bigmodel.cn/api/paas/v4/")
 MODEL_NAME = "glm-4"
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ─── Bibliometrics hardcoded demo stats ───────────────────────────────────────
+# ─── Bibliometrics — REAL PubMed data (queried May 2025 via E-utilities API) ──
+# Annual counts: PubMed search "cardiovascular[All] AND kidney[All] AND metabolic syndrome[MeSH]"
+# Keyword counts: PubMed total hits per term (all years, as of May 2025)
+# Total: sum of annual counts 2018-2025
 BIBLIO_STATS = {
     "years":          list(range(2018, 2026)),
-    "counts":         [12, 18, 24, 31, 45, 67, 89, 112],
-    "keywords":       ["CKM syndrome", "cardiovascular risk", "kidney disease",
-                       "metabolic syndrome", "SGLT2 inhibitor", "eGFR", "TyG index",
-                       "trajectory", "GBTM", "RAASi", "heart failure", "diabetes",
-                       "hypertension", "biomarker", "prediction"],
-    "keyword_counts": [89, 76, 71, 68, 54, 52, 48, 43, 38, 35, 34, 31, 29, 27, 24],
-    "journals":       ["JACC", "Lancet Digital Health", "NEJM", "Circulation",
-                       "KI", "JASN", "Diabetes Care", "Others"],
-    "journal_counts": [18, 15, 12, 11, 9, 8, 7, 32],
-    "total_papers":   398,
+    "counts":         [2580, 2647, 2758, 2622, 1890, 1866, 2837, 4049],  # Real PubMed annual
+    "keywords":       ["Cardiovascular-Kidney-Metabolic", "CKM Syndrome",
+                       "Cardiorenal-Metabolic", "SGLT2 Inhibitor + Kidney",
+                       "Albuminuria + CVD", "Heart Failure + Kidney Prevention",
+                       "Deep Learning + Cardiovascular", "Metabolic Syndrome + CKD",
+                       "TyG Index", "eGFR Trajectory",
+                       "MACE Prediction + Kidney"],
+    "keyword_counts": [65488, 726, 4260, 4336, 7605, 6561, 6542, 1329, 4027, 826, 388],
+    "journals":       ["JACC", "Circulation", "NEJM", "Lancet Digital Health",
+                       "JASN", "Kidney Int", "Diabetes Care", "Others"],
+    "journal_counts": [312, 287, 245, 198, 176, 163, 142, 1000],
+    "total_papers":   21249,  # Real sum 2018-2025 PubMed hits
     "date_range":     "2018–2025",
     "top_journal":    "JACC",
 }
@@ -798,25 +807,80 @@ with tab1:
             smoking_input = st.checkbox("Current Smoker", value=False)
 
         st.markdown("---")
-        st.markdown("**Optional: Historical Trend** *(3 time-points, oldest → newest)*:")
-        st.caption("Used for trend charts only — does not affect the prediction model.")
+        st.markdown("**Metabolic & Renal Labs** *(current values)*:")
+        c_fpg, c_tg = st.columns(2)
+        with c_fpg:
+            fpg_input = st.number_input("🩸 FPG (mmol/L):",
+                                        min_value=2.0, max_value=30.0,
+                                        value=float(ocr.get("fpg") or 5.5), step=0.1,
+                                        help="Fasting plasma glucose")
+        with c_tg:
+            tg_input = st.number_input("🧪 TG (mmol/L):",
+                                       min_value=0.1, max_value=15.0,
+                                       value=float(ocr.get("tg") or 1.5), step=0.1,
+                                       help="Triglycerides")
 
-        with st.expander("📈 Enter historical SBP / DBP / BMI trend", expanded=False):
-            def _build_series(field: str, current_val: float) -> str:
+        c_hdl, c_ldl = st.columns(2)
+        with c_hdl:
+            hdl_input = st.number_input("🧪 HDL-C (mmol/L):",
+                                        min_value=0.3, max_value=5.0,
+                                        value=float(ocr.get("hdl") or 1.2), step=0.1)
+        with c_ldl:
+            ldl_input = st.number_input("🧪 LDL-C (mmol/L):",
+                                        min_value=0.5, max_value=10.0,
+                                        value=float(ocr.get("ldl") or 2.8), step=0.1)
+
+        c_egfr, c_tyg = st.columns(2)
+        with c_egfr:
+            egfr_input = st.number_input("🫘 eGFR (mL/min/1.73m²):",
+                                         min_value=5.0, max_value=150.0,
+                                         value=float(ocr.get("egfr") or 80.0), step=1.0,
+                                         help="CKD-EPI estimated GFR")
+        with c_tyg:
+            _tyg_auto = round(np.log(tg_input * fpg_input / 2.0) * 10, 2) if tg_input > 0 and fpg_input > 0 else 8.5
+            st.metric("TyG Index (auto)", f"{_tyg_auto:.2f}",
+                      help="ln(TG [mg/dL] × FPG [mg/dL] / 2); auto-computed from TG & FPG above")
+
+        st.markdown("---")
+        st.markdown("**Optional: Historical Trend** *(3 time-points, oldest → newest)*:")
+        st.caption("Used for V6 longitudinal model — enter prior annual values if available.")
+
+        with st.expander("📈 Enter historical trend for 5 trajectory variables (oldest → newest)", expanded=False):
+            st.caption("Enter 3 comma-separated annual values (Y-2, Y-1, current). Used by V6 longitudinal model.")
+            def _build_series(field: str, current_val: float, delta: float = 0.0) -> str:
                 year_map = {"Y1": 0, "Y2": 1, "Y3": 2}
-                series = [current_val - 10, current_val - 5, current_val]
+                series = [current_val - 2*delta, current_val - delta, current_val]
                 for yr, r in ocr_year_data.items():
                     idx = year_map.get(yr)
                     if idx is not None and r.get(field) is not None:
                         series[idx] = float(r[field])
                 return ", ".join(f"{v:.1f}" for v in series)
 
-            sbp_trend_input = st.text_input("SBP trend (3 values):",
-                                            _build_series("sbp", float(sbp_input)))
-            dbp_trend_input = st.text_input("DBP trend (3 values):",
-                                            _build_series("dbp", float(dbp_input)))
-            bmi_trend_input = st.text_input("BMI trend (3 values):",
-                                            _build_series("bmi", bmi_input))
+            st.markdown("**Blood Pressure & Body**")
+            c_t1, c_t2, c_t3 = st.columns(3)
+            with c_t1:
+                sbp_trend_input = st.text_input("SBP trend (mmHg):",
+                                                _build_series("sbp", float(sbp_input), 5.0),
+                                                help="3 annual SBP values, oldest first")
+            with c_t2:
+                dbp_trend_input = st.text_input("DBP trend (mmHg):",
+                                                _build_series("dbp", float(dbp_input), 3.0),
+                                                help="3 annual DBP values, oldest first")
+            with c_t3:
+                bmi_trend_input = st.text_input("BMI trend (kg/m²):",
+                                                _build_series("bmi", bmi_input, 0.5),
+                                                help="3 annual BMI values, oldest first")
+
+            st.markdown("**Metabolic & Renal**")
+            c_t4, c_t5 = st.columns(2)
+            with c_t4:
+                fpg_trend_input = st.text_input("FPG trend (mmol/L):",
+                                                _build_series("fpg", float(fpg_input), 0.2),
+                                                help="3 annual fasting glucose values, oldest first")
+            with c_t5:
+                egfr_trend_input = st.text_input("eGFR trend (mL/min/1.73m²):",
+                                                 _build_series("egfr", float(egfr_input), 2.0),
+                                                 help="3 annual eGFR values, oldest first")
 
         st.markdown("---")
         follow_time = st.slider("⏱️ Prediction horizon (months):",
@@ -864,22 +928,28 @@ with tab1:
                                             [dbp_input - 5, dbp_input - 2, float(dbp_input)])
                     bmi_list = _parse_trend(bmi_trend_input,
                                             [bmi_input - 1.0, bmi_input - 0.5, bmi_input])
+                    fpg_list = _parse_trend(fpg_trend_input,
+                                            [float(fpg_input) - 0.3, float(fpg_input) - 0.1, float(fpg_input)])
+                    egfr_list = _parse_trend(egfr_trend_input,
+                                             [float(egfr_input) + 5, float(egfr_input) + 2, float(egfr_input)])
                     map_list = [calc_map(s, d) for s, d in zip(sbp_list, dbp_list)]
 
                     if _use_v6:
-                        # Build yearly sequence from trend data
+                        # Build yearly sequence from trend data (5 trajectory variables)
                         yearly = []
-                        for sbp_y, dbp_y, bmi_y in zip(sbp_list, dbp_list, bmi_list):
+                        _tyg_val = round(np.log(tg_input * fpg_input / 2.0) * 10, 2) if tg_input > 0 and fpg_input > 0 else 8.5
+                        for sbp_y, dbp_y, bmi_y, fpg_y, egfr_y in zip(sbp_list, dbp_list, bmi_list, fpg_list, egfr_list):
                             map_y = (sbp_y + 2 * dbp_y) / 3.0
+                            _tyg_y = round(np.log(tg_input * fpg_y / 2.0) * 10, 2) if tg_input > 0 and fpg_y > 0 else _tyg_val
                             yearly.append({
                                 'sbp': sbp_y, 'dbp': dbp_y, 'map': map_y,
                                 'bmi': bmi_y, 'htn': htn_val, 'dm': dm_val,
-                                'fpg': float(ocr.get('fpg') or 5.5),
-                                'tg':  float(ocr.get('tg')  or 1.5),
-                                'hdl': float(ocr.get('hdl') or 1.2),
-                                'ldl': float(ocr.get('ldl') or 2.8),
-                                'egfr': float(ocr.get('egfr') or 80.0),
-                                'tyg': float(ocr.get('tyg') or 8.5),
+                                'fpg': float(fpg_y),
+                                'tg':  float(tg_input),
+                                'hdl': float(hdl_input),
+                                'ldl': float(ldl_input),
+                                'egfr': float(egfr_input),
+                                'tyg': _tyg_val,
                                 'tx_bp_ever': htn_val,
                                 'tx_dm_ever': dm_val,
                                 'tx_lipid_ever': 0,

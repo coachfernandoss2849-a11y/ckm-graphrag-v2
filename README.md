@@ -1,3 +1,14 @@
+---
+title: CKM Graph RAG v2
+emoji: 🧬
+colorFrom: blue
+colorTo: teal
+sdk: streamlit
+sdk_version: 1.32.0
+app_file: app.py
+pinned: false
+---
+
 # CKM Graph RAG v2 — Intelligent Clinical Decision Support
 
 A comprehensive clinical decision support system for CKM (Cardiovascular-Kidney-Metabolic) syndrome.

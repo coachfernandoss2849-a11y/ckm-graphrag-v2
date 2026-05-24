@@ -576,102 +576,127 @@ def trajectory_phenotype_chart(traj_df: pd.DataFrame) -> go.Figure:
     Multi-panel trajectory phenotype chart.
     Accepts long-format: columns traj_class, mean_val, variable, time
     OR wide-format: columns group/traj_class, time, BMI, MAP, eGFR, HDL
-    4 phenotype groups, 2×2 subplot layout.
+    Shows all available variables in a grid layout.
     """
     if traj_df is None or traj_df.empty:
         return go.Figure()
 
-    # Detect long format (has 'variable' and 'mean_val' columns)
-    if 'variable' in traj_df.columns and 'mean_val' in traj_df.columns:
-        grp_col = 'traj_class' if 'traj_class' in traj_df.columns else 'group'
-        # Pivot to wide: index=(traj_class, time), columns=variable
-        df = traj_df.copy()
+    grp_col = 'traj_class' if 'traj_class' in traj_df.columns else 'group'
+    is_long = 'variable' in traj_df.columns and 'mean_val' in traj_df.columns
+
+    df = traj_df.copy()
+    if is_long:
         df[grp_col] = df[grp_col].astype(int)
         df['variable'] = df['variable'].str.lower()
+
+    # Full display name / unit mapping
+    VAR_MAP   = {'bmi': 'BMI', 'fpg': 'FPG', 'map': 'MAP', 'egfr': 'eGFR',
+                 'tg': 'TG', 'hdl': 'HDL', 'alb': 'ALB'}
+    UNITS     = {'BMI': 'kg/m²', 'FPG': 'mmol/L', 'MAP': 'mmHg',
+                 'eGFR': 'mL/min/1.73m²', 'TG': 'mmol/L', 'HDL': 'mmol/L', 'ALB': 'g/L'}
+    FULL_NAMES = {
+        'BMI':  'Body Mass Index (BMI)',
+        'FPG':  'Fasting Plasma Glucose (FPG)',
+        'MAP':  'Mean Arterial Pressure (MAP)',
+        'eGFR': 'Estimated GFR (eGFR)',
+        'TG':   'Triglycerides (TG)',
+        'HDL':  'HDL Cholesterol',
+        'ALB':  'Albumin',
+    }
+    GRP_COLORS = [SKY, OCHRE, ROSE, SAGE]
+    GRP_LABELS = {1: 'P1: Low-burden', 2: 'P2: Adiposity-BP',
+                  3: 'P3: Glucose-TG',  4: 'P4: Lean-Renal'}
+
+    ORDER = ['bmi', 'fpg', 'map', 'egfr', 'tg', 'hdl', 'alb']
+    if is_long:
+        avail_vars = [v for v in ORDER if v in df['variable'].unique()]
     else:
-        grp_col = 'traj_class' if 'traj_class' in traj_df.columns else 'group'
-        df = traj_df.copy()
+        avail_vars = [v for v in ORDER if v in df.columns]
 
-    # Map variable names to display names
-    var_map = {'bmi': 'BMI', 'map': 'MAP', 'egfr': 'eGFR', 'hdl': 'HDL', 'alb': 'ALB'}
-    units = {'BMI': 'kg/m²', 'MAP': 'mmHg', 'eGFR': 'mL/min/1.73m²', 'HDL': 'mmol/L', 'ALB': 'g/L'}
-    group_colors = [SKY, OCHRE, ROSE, SAGE]
-    group_labels = {1: 'P1: Low-burden', 2: 'P2: Adiposity-BP', 3: 'P3: Glucose-TG', 4: 'P4: Lean-Renal'}
-
-    # Get available biomarkers from data (include all vars present in the data)
-    all_possible = ['bmi', 'fpg', 'map', 'egfr', 'tg', 'hdl', 'alb']
-    var_map.update({'fpg': 'FPG', 'tg': 'TG'})
-    units.update({'FPG': 'mmol/L', 'TG': 'mmol/L'})
-    if 'variable' in df.columns:
-        avail_vars = [v for v in all_possible if v in df['variable'].unique()]
-    else:
-        avail_vars = [v for v in all_possible if v in df.columns]
-
-    biomarkers = [var_map.get(v, v.upper()) for v in avail_vars]
-    if not biomarkers:
+    if not avail_vars:
         avail_vars = ['bmi', 'map', 'egfr', 'hdl']
-        biomarkers = ['BMI', 'MAP', 'eGFR', 'HDL']
 
+    panel_labels = [VAR_MAP.get(v, v.upper()) for v in avail_vars]
+    panel_titles = [FULL_NAMES.get(VAR_MAP.get(v, v.upper()), VAR_MAP.get(v, v.upper()))
+                    for v in avail_vars]
     groups = sorted(df[grp_col].unique())[:4]
 
-    # Dynamic layout: ≤4 vars → 2×2, 5 vars → 2×3 (with last cell empty)
-    n_vars = len(biomarkers)
-    if n_vars <= 4:
-        n_rows, n_cols = 2, 2
-        positions = [(1,1),(1,2),(2,1),(2,2)]
-    else:
-        n_rows, n_cols = 2, 3
-        positions = [(1,1),(1,2),(1,3),(2,1),(2,2),(2,3)]
+    # Layout: 1 var per column, max 3 cols
+    n_vars = len(avail_vars)
+    n_cols = min(n_vars, 3)
+    n_rows = (n_vars + n_cols - 1) // n_cols
+    positions = []
+    for i in range(n_vars):
+        positions.append((i // n_cols + 1, i % n_cols + 1))
+
+    # Infer time labels
+    all_times = sorted(df['time'].unique()) if 'time' in df.columns else [0, 1, 2]
+    time_label_map = {t: f'W{i+1}' for i, t in enumerate(all_times)}
 
     fig = make_subplots(
         rows=n_rows, cols=n_cols,
-        subplot_titles=biomarkers,
-        vertical_spacing=0.22,
+        subplot_titles=panel_titles,
+        vertical_spacing=0.28 if n_rows > 1 else 0.15,
         horizontal_spacing=0.10,
     )
 
-    for bi, (bm, raw_var) in enumerate(zip(biomarkers, avail_vars)):
+    for bi, (bm, raw_var) in enumerate(zip(panel_labels, avail_vars)):
         row, col = positions[bi]
-        unit = units.get(bm, '')
-        for gi, (grp, color) in enumerate(zip(groups, group_colors)):
-            if 'variable' in df.columns:
+        unit = UNITS.get(bm, '')
+        for gi, (grp, color) in enumerate(zip(groups, GRP_COLORS)):
+            if is_long:
                 gdf = df[(df[grp_col] == grp) & (df['variable'] == raw_var)].sort_values('time')
-                x_vals = gdf['time'].tolist()
+                x_vals = [time_label_map.get(t, str(t)) for t in gdf['time'].tolist()]
                 y_vals = gdf['mean_val'].tolist()
             else:
                 gdf = df[df[grp_col] == grp].sort_values('time')
-                x_vals = gdf['time'].tolist()
+                x_vals = [time_label_map.get(t, str(t)) for t in gdf['time'].tolist()]
                 y_vals = gdf[raw_var].tolist() if raw_var in gdf.columns else []
 
             if not y_vals:
                 continue
 
-            lbl = group_labels.get(grp, f'Group {grp}')
+            lbl = GRP_LABELS.get(grp, f'Group {grp}')
             fig.add_trace(go.Scatter(
                 x=x_vals, y=y_vals,
                 mode='lines+markers',
                 name=lbl,
-                line=dict(color=color, width=2.2),
-                marker=dict(size=6, color=color, line=dict(color='white', width=1.5)),
+                line=dict(color=color, width=2.5),
+                marker=dict(size=7, color=color, line=dict(color='white', width=1.5)),
                 legendgroup=f'grp{grp}',
                 showlegend=(bi == 0),
-                hovertemplate=f'{lbl}<br>{bm}: %{{y:.1f}} {unit}<extra></extra>',
+                hovertemplate=f'<b>{lbl}</b><br>{bm}: %{{y:.2f}} {unit}<extra></extra>',
             ), row=row, col=col)
-        fig.update_yaxes(title_text=unit, row=row, col=col, gridcolor=MIST, gridwidth=0.5,
-                         title_font=dict(size=10))
-        fig.update_xaxes(title_text='Wave', row=row, col=col, gridcolor=MIST, gridwidth=0.5,
-                         tickvals=[0, 1, 2], ticktext=['W1<br>2015', 'W2<br>2017', 'W3<br>2019'],
-                         title_font=dict(size=10))
 
-    _apply_base(fig, 'CKM Trajectory Phenotype Groups — Population Cohort (N = 95,240)', height=660)
-    # Fix subplot title font and position to prevent overlap with axis labels
-    for ann in fig.layout.annotations:
-        ann.font = dict(size=11, family="Inter, sans-serif", color=NAVY)
-        ann.yanchor = 'bottom'
+        fig.update_yaxes(
+            title_text=unit, row=row, col=col,
+            gridcolor=MIST, gridwidth=0.5,
+            title_font=dict(size=10, color=SLATE),
+            tickfont=dict(size=9),
+        )
+        fig.update_xaxes(
+            row=row, col=col,
+            gridcolor=MIST, gridwidth=0.5,
+            tickfont=dict(size=9),
+        )
+
+    # Apply layout without title (title causes overlap with subplot titles)
     fig.update_layout(
-        legend=dict(orientation='h', y=-0.06, x=0.5, xanchor='center', font=dict(size=11)),
-        margin=dict(l=50, r=30, t=80, b=60),
+        paper_bgcolor=_BG,
+        plot_bgcolor=_BG,
+        font=dict(family=_FONT, color=NAVY),
+        height=300 * n_rows + 80,
+        margin=dict(l=50, r=30, t=40, b=80),
+        legend=dict(
+            orientation='h', y=-0.12, x=0.5, xanchor='center',
+            font=dict(size=11), bgcolor='rgba(255,255,255,0.8)',
+            bordercolor=MIST, borderwidth=1,
+        ),
     )
+    # Subplot titles: smaller font, enough yshift
+    for ann in fig.layout.annotations:
+        ann.font = dict(size=12, family=_FONT, color=NAVY)
+        ann.yshift = 5
     return fig
 
 

@@ -9,9 +9,6 @@ __pycache__/
 venv/
 .venv/
 
-# ChromaDB (rebuild on deploy)
-chroma_db/
-
 # OS
 .DS_Store
 Thumbs.db
