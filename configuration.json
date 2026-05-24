@@ -1,0 +1,9 @@
+{
+  "framework": "streamlit",
+  "license": "apache-2.0",
+  "base_environment": {
+    "type": "docker",
+    "image": "registry.cn-hangzhou.aliyuncs.com/modelscope-repo/modelscope:ubuntu20.04-py38-torch2.0.1-tf2.13.0-1.9.5"
+  },
+  "port": 8501
+}
