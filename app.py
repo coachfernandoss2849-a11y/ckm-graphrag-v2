@@ -20,8 +20,7 @@ import base64
 import pandas as pd
 import streamlit.components.v1 as components
 from openai import OpenAI
-from langchain_community.vectorstores import Chroma
-# ZhipuAIEmbeddings removed from langchain_community — use custom implementation
+# All langchain/chromadb imports removed — use custom native implementations below
 class ZhipuAIEmbeddings:
     """Minimal ZhipuAI embedding wrapper compatible with chromadb."""
     def __init__(self, model="embedding-3"):
