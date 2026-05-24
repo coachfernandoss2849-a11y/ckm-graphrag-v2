@@ -212,11 +212,36 @@ ode_df  = _load_csv("figure3_real_ode.csv")
 ext_df  = _load_csv("fig5_external_forest.csv")
 
 # ─── Cached vector DB ─────────────────────────────────────────────────────────
+class _NativeChromaDB:
+    """Thin wrapper around native chromadb client, mimicking langchain Chroma interface."""
+    def __init__(self, persist_directory: str, embedding_fn):
+        import chromadb
+        self._client = chromadb.PersistentClient(path=persist_directory)
+        self._embedding_fn = embedding_fn
+        try:
+            self._collection = self._client.get_or_create_collection("langchain")
+        except Exception:
+            self._collection = self._client.get_or_create_collection("default")
+
+    def similarity_search(self, query: str, k: int = 4):
+        try:
+            emb = self._embedding_fn.embed_query(query)
+            results = self._collection.query(query_embeddings=[emb], n_results=k)
+            docs = []
+            for i, doc in enumerate(results.get("documents", [[]])[0]):
+                meta = results.get("metadatas", [[]])[0][i] if results.get("metadatas") else {}
+                docs.append(type("Doc", (), {"page_content": doc, "metadata": meta})())
+            return docs
+        except Exception:
+            return []
+
 @st.cache_resource
 def load_database():
     embeddings = ZhipuAIEmbeddings(model="embedding-3")
-    return Chroma(persist_directory=os.path.join(_APP_DIR, "chroma_db"),
-                  embedding_function=embeddings)
+    return _NativeChromaDB(
+        persist_directory=os.path.join(_APP_DIR, "chroma_db"),
+        embedding_fn=embeddings,
+    )
 
 vector_db = load_database()
 
