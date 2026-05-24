@@ -1,14 +1,25 @@
 # app.py — CKM Graph RAG v2 Intelligent Clinical Decision Support Agent
+
+# ─── numpy compatibility patch (must be FIRST) ────────────────────────────────
+import numpy as np
+if not hasattr(np, 'float_'):
+    np.float_ = np.float64
+if not hasattr(np, 'int_'):
+    np.int_ = np.int64
+if not hasattr(np, 'uint'):
+    np.uint = np.uint64
+if not hasattr(np, 'bool'):
+    np.bool = np.bool_
+if not hasattr(np, 'complex_'):
+    np.complex_ = np.complex128
+
 import streamlit as st
 import os
 import math
 import base64
-import numpy as np
 import pandas as pd
 import streamlit.components.v1 as components
 from openai import OpenAI
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import ZhipuAIEmbeddings
 
 from modules.viz import (
     risk_gauge, trajectory_chart,
