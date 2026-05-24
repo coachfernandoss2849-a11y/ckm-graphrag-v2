@@ -20,6 +20,7 @@ import base64
 import pandas as pd
 import streamlit.components.v1 as components
 from openai import OpenAI
+from langchain_community.embeddings import ZhipuAIEmbeddings
 
 from modules.viz import (
     risk_gauge, trajectory_chart,
