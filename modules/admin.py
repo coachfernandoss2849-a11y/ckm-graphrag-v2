@@ -212,20 +212,72 @@ def render_kb_upload():
 
 
 def _rebuild_chroma():
-    from langchain_community.document_loaders import DirectoryLoader, TextLoader
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_community.vectorstores import Chroma
-    from langchain_community.embeddings import ZhipuAIEmbeddings
+    import chromadb
+    import requests
+    import os
 
     if _CHROMA_PATH.exists():
         shutil.rmtree(str(_CHROMA_PATH))
 
-    loader = DirectoryLoader(str(_KB_PATH), glob="**/*.txt", loader_cls=TextLoader)
-    docs = loader.load()
-    chunks = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50).split_documents(docs)
-    embeddings = ZhipuAIEmbeddings(model="embedding-3")
-    Chroma.from_documents(documents=chunks, embedding=embeddings,
-                          persist_directory=str(_CHROMA_PATH))
+    # Load all .txt files manually
+    docs = []
+    if _KB_PATH.exists():
+        for txt_file in _KB_PATH.rglob("*.txt"):
+            try:
+                text = txt_file.read_text(encoding="utf-8", errors="ignore")
+                docs.append({"text": text, "source": str(txt_file)})
+            except Exception:
+                pass
+
+    if not docs:
+        return
+
+    # Chunk documents
+    def _chunk_text(text, chunk_size=500, overlap=50):
+        chunks = []
+        start = 0
+        while start < len(text):
+            end = start + chunk_size
+            chunks.append(text[start:end])
+            start += chunk_size - overlap
+        return chunks
+
+    # Build embeddings via ZhipuAI API
+    api_key = os.environ.get("ZHIPUAI_API_KEY", "")
+
+    def _embed(text):
+        try:
+            resp = requests.post(
+                "https://open.bigmodel.cn/api/paas/v4/embeddings",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": "embedding-3", "input": text[:2048]},
+                timeout=30,
+            )
+            return resp.json()["data"][0]["embedding"]
+        except Exception:
+            return [0.0] * 2048
+
+    client = chromadb.PersistentClient(path=str(_CHROMA_PATH))
+    collection = client.get_or_create_collection("langchain")
+
+    batch_texts, batch_metas, batch_ids = [], [], []
+    idx = 0
+    for doc in docs:
+        for chunk in _chunk_text(doc["text"]):
+            batch_texts.append(chunk)
+            batch_metas.append({"source": doc["source"]})
+            batch_ids.append(f"doc_{idx}")
+            idx += 1
+
+    # Add in small batches to avoid timeout
+    batch_size = 20
+    for i in range(0, len(batch_texts), batch_size):
+        b_texts = batch_texts[i:i+batch_size]
+        b_metas = batch_metas[i:i+batch_size]
+        b_ids = batch_ids[i:i+batch_size]
+        b_embs = [_embed(t) for t in b_texts]
+        collection.add(documents=b_texts, embeddings=b_embs,
+                       metadatas=b_metas, ids=b_ids)
 
 
 # ── Video management section ──────────────────────────────────────────────────
