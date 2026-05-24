@@ -14,3 +14,9 @@ scipy
 pandas
 statsmodels
 PyYAML
+lightgbm
+xgboost
+catboost
+scikit-learn
+joblib
+networkx
