@@ -149,9 +149,17 @@ class BiLSTM_MHA(nn.Module):
 
 # ─── Checkpoint loading ───────────────────────────────────────────────────────
 
+def _numpy_state_to_torch(np_state: dict) -> dict:
+    """Convert numpy-array state_dict back to torch tensors."""
+    return {k: torch.from_numpy(v) if isinstance(v, __import__('numpy').ndarray) else v
+            for k, v in np_state.items()}
+
+
 @lru_cache(maxsize=1)
 def _load_v6():
-    """Load V6 checkpoint. Returns (ckpt, tf, bi, kan) or raises."""
+    """Load V6 checkpoint. Returns (ckpt, tf, bi, kan) or raises.
+    Supports both original torch format and numpy_compat_v1 format.
+    """
     if not _CKPT_PATH.exists():
         raise FileNotFoundError(f"V6 checkpoint not found: {_CKPT_PATH}")
     with open(_CKPT_PATH, 'rb') as f:
@@ -169,9 +177,17 @@ def _load_v6():
     n_static = len(ckpt['feature_cols'])
     kan = KAN_Static(n_static, emb_dim=arch['emb_dim']).to(device)
 
-    tf.load_state_dict(ckpt['tf_state'])
-    bi.load_state_dict(ckpt['bi_state'])
-    kan.load_state_dict(ckpt['kan_state'])
+    # Support numpy_compat_v1 format (torch-version-independent)
+    fmt = ckpt.get('format', 'torch_native')
+    if fmt == 'numpy_compat_v1':
+        tf.load_state_dict(_numpy_state_to_torch(ckpt['tf_state_np']), strict=True)
+        bi.load_state_dict(_numpy_state_to_torch(ckpt['bi_state_np']), strict=True)
+        kan.load_state_dict(_numpy_state_to_torch(ckpt['kan_state_np']), strict=True)
+    else:
+        tf.load_state_dict(ckpt['tf_state'])
+        bi.load_state_dict(ckpt['bi_state'])
+        kan.load_state_dict(ckpt['kan_state'])
+
     tf.eval(); bi.eval(); kan.eval()
 
     return ckpt, tf, bi, kan
