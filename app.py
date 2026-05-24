@@ -21,7 +21,23 @@ import pandas as pd
 import streamlit.components.v1 as components
 from openai import OpenAI
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import ZhipuAIEmbeddings
+# ZhipuAIEmbeddings removed from langchain_community — use custom implementation
+class ZhipuAIEmbeddings:
+    """Minimal ZhipuAI embedding wrapper compatible with chromadb."""
+    def __init__(self, model="embedding-3"):
+        self.model = model
+    def embed_query(self, text: str):
+        import requests, os
+        key = os.environ.get("ZHIPUAI_API_KEY", "")
+        resp = requests.post(
+            "https://open.bigmodel.cn/api/paas/v4/embeddings",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": self.model, "input": text},
+            timeout=30,
+        )
+        return resp.json()["data"][0]["embedding"]
+    def embed_documents(self, texts):
+        return [self.embed_query(t) for t in texts]
 
 from modules.viz import (
     risk_gauge, trajectory_chart,
